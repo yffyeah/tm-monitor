@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>温湿度监控</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        html, body {
+            max-width: 100vw;
+            overflow-x: hidden;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 10px;
+        }
+        .container {
+            width: 100%;
+            max-width: 100%;
+            margin: 0 auto;
+        }
+        h1 {
+            color: white;
+            text-align: center;
+            margin-bottom: 15px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+            font-size: 1.5rem;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 15px;
+            width: 100%;
+        }
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            width: 100%;
+            overflow: hidden;
+        }
+        .card h2 {
+            color: #333;
+            font-size: 14px;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #eee;
+        }
+
+        .status-card {
+            grid-column: 1;
+        }
+        .today-card {
+            grid-column: 1;
+        }
+        .status-content {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .status-item {
+            text-align: center;
+            padding: 10px 15px;
+            flex: 1;
+            min-width: 80px;
+            max-width: 33%;
+        }
+        .status-item .label {
+            color: #666;
+            font-size: 12px;
+            margin-bottom: 3px;
+        }
+        .status-item .value {
+            font-size: 24px;
+            font-weight: bold;
+        }
+        .status-item .unit {
+            font-size: 14px;
+            color: #999;
+        }
+        .status-item.time .value {
+            font-size: 20px;
+            color: #333;
+        }
+        .status-item.temperature .value {
+            color: #e74c3c;
+        }
+        .status-item.humidity .value {
+            color: #3498db;
+        }
+
+        .update-time {
+            font-size: 10px;
+            color: #999;
+            margin-top: 3px;
+            word-break: break-all;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 220px;
+            width: 100%;
+        }
+        .chart-container canvas {
+            max-width: 100%;
+        }
+
+        .month-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 15px;
+            width: 100%;
+        }
+        .month-chart {
+            height: 200px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 30px;
+            color: #666;
+        }
+        .error {
+            background: #fee;
+            color: #c00;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            font-size: 12px;
+            word-break: break-all;
+        }
+
+        @media (max-width: 400px) {
+            .status-item {
+                min-width: 70px;
+                padding: 8px 10px;
+            }
+            .status-item .value {
+                font-size: 20px;
+            }
+            .status-item .unit {
+                font-size: 12px;
+            }
+            .status-item.time .value {
+                font-size: 18px;
+            }
+        }
+
+        @media (min-width: 600px) {
+            body {
+                padding: 15px;
+            }
+            h1 {
+                font-size: 1.8rem;
+                margin-bottom: 20px;
+            }
+            .grid {
+                gap: 15px;
+            }
+            .card {
+                padding: 18px;
+            }
+            .card h2 {
+                font-size: 15px;
+            }
+            .status-item {
+                padding: 12px 20px;
+                min-width: 120px;
+            }
+            .status-item .label {
+                font-size: 13px;
+            }
+            .status-item .value {
+                font-size: 34px;
+            }
+            .status-item .unit {
+                font-size: 16px;
+            }
+            .status-item.time .value {
+                font-size: 26px;
+            }
+            .chart-container {
+                height: 250px;
+            }
+        }
+
+        @media (min-width: 768px) {
+            body {
+                padding: 20px;
+            }
+            h1 {
+                font-size: 2rem;
+                margin-bottom: 25px;
+            }
+            .grid {
+                grid-template-columns: 1fr 1fr;
+                gap: 20px;
+            }
+            .status-card {
+                grid-column: 1 / -1;
+            }
+            .today-card {
+                grid-column: 1 / -1;
+            }
+            .card {
+                padding: 20px;
+            }
+            .card h2 {
+                font-size: 16px;
+            }
+            .status-content {
+                gap: 20px;
+            }
+            .status-item {
+                padding: 15px 30px;
+                min-width: 150px;
+                max-width: none;
+            }
+            .status-item .label {
+                font-size: 14px;
+                margin-bottom: 5px;
+            }
+            .status-item .value {
+                font-size: 48px;
+            }
+            .status-item .unit {
+                font-size: 20px;
+            }
+            .status-item.time .value {
+                font-size: 36px;
+            }
+            .update-time {
+                font-size: 12px;
+                margin-top: 5px;
+            }
+            .chart-container {
+                height: 300px;
+            }
+            .month-grid {
+                grid-template-columns: 1fr 1fr;
+                gap: 20px;
+            }
+            .month-chart {
+                height: 250px;
+            }
+        }
+
+        @media (min-width: 1024px) {
+            .container {
+                max-width: 1200px;
+            }
+            .grid {
+                gap: 25px;
+            }
+            .card {
+                padding: 25px;
+            }
+            .status-item {
+                padding: 20px 40px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🌡️ 温湿度监控系统</h1>
+
+        <div id="error" class="error" style="display: none;"></div>
+
+        <div class="grid">
+            <div class="card status-card">
+                <h2>📊 当前状态</h2>
+                <div class="status-content">
+                    <div class="status-item time">
+                        <div class="label">系统时间</div>
+                        <div class="value" id="currentTime">--:--:--</div>
+                    </div>
+                    <div class="status-item temperature">
+                        <div class="label">当前温度</div>
+                        <div class="value" id="currentTemp">--</div>
+                        <div class="unit">°C</div>
+                        <div class="update-time" id="tempUpdateTime">--</div>
+                    </div>
+                    <div class="status-item humidity">
+                        <div class="label">当前湿度</div>
+                        <div class="value" id="currentHumidity">--</div>
+                        <div class="unit">%</div>
+                        <div class="update-time" id="humUpdateTime">--</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card today-card">
+                <h2>📈 今日温湿度趋势</h2>
+                <div class="chart-container">
+                    <canvas id="todayChart"></canvas>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>🔺 本月温度K线</h2>
+                <div class="chart-container">
+                    <canvas id="tempKChart"></canvas>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>💧 本月湿度K线</h2>
+                <div class="chart-container">
+                    <canvas id="humKChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let todayChart = null;
+        let tempKChart = null;
+        let humKChart = null;
+
+        function updateTime() {
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString('zh-CN', { hour12: false });
+            document.getElementById('currentTime').textContent = timeStr;
+        }
+
+        async function loadLatestData() {
+            try {
+                const response = await fetch('/api/latest');
+                const data = await response.json();
+
+                if (data.temperature !== null) {
+                    document.getElementById('currentTemp').textContent = data.temperature.toFixed(1);
+                    document.getElementById('currentHumidity').textContent = data.humidity.toFixed(1);
+                    document.getElementById('tempUpdateTime').textContent = '更新: ' + data.timestamp;
+                    document.getElementById('humUpdateTime').textContent = '更新: ' + data.timestamp;
+                }
+            } catch (error) {
+                console.log('加载最新数据失败:', error);
+            }
+        }
+
+        async function loadTodayTrend() {
+            try {
+                const response = await fetch('/api/today_trend');
+                const data = await response.json();
+                updateTodayChart(data.timestamps, data.temperatures, data.humidities);
+            } catch (error) {
+                console.log('加载今日趋势失败:', error);
+            }
+        }
+
+        async function loadMonthKline() {
+            try {
+                const response = await fetch('/api/month_kline');
+                const data = await response.json();
+                updateKlineCharts(data.temp_kline, data.hum_kline);
+            } catch (error) {
+                console.log('加载月度K线失败:', error);
+            }
+        }
+
+        function updateTodayChart(labels, temperatures, humidities) {
+            const ctx = document.getElementById('todayChart').getContext('2d');
+
+            if (todayChart) {
+                todayChart.destroy();
+            }
+
+            todayChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: '温度 (°C)',
+                            data: temperatures,
+                            borderColor: '#e74c3c',
+                            backgroundColor: 'rgba(231, 76, 60, 0.1)',
+                            borderWidth: 2,
+                            fill: true,
+                            tension: 0.3,
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: '湿度 (%)',
+                            data: humidities,
+                            borderColor: '#3498db',
+                            backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                            borderWidth: 2,
+                            fill: true,
+                            tension: 0.3,
+                            yAxisID: 'y1'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false,
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: {
+                                font: {
+                                    size: 11
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            display: true,
+                            ticks: {
+                                maxRotation: 45,
+                                minRotation: 45,
+                                maxTicksLimit: 12,
+                                font: {
+                                    size: 10
+                                }
+                            }
+                        },
+                        y: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                            title: {
+                                display: true,
+                                text: '温度 (°C)',
+                                color: '#e74c3c',
+                                font: {
+                                    size: 11
+                                }
+                            },
+                            ticks: {
+                                color: '#e74c3c',
+                                font: {
+                                    size: 10
+                                }
+                            },
+                            min: 0,
+                            max: 45
+                        },
+                        y1: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            title: {
+                                display: true,
+                                text: '湿度 (%)',
+                                color: '#3498db',
+                                font: {
+                                    size: 11
+                                }
+                            },
+                            ticks: {
+                                color: '#3498db',
+                                font: {
+                                    size: 10
+                                }
+                            },
+                            grid: {
+                                drawOnChartArea: false,
+                            },
+                            min: 20,
+                            max: 90
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateKlineCharts(tempData, humData) {
+            const tempCtx = document.getElementById('tempKChart').getContext('2d');
+            const humCtx = document.getElementById('humKChart').getContext('2d');
+
+            if (tempKChart) tempKChart.destroy();
+            if (humKChart) humKChart.destroy();
+
+            tempKChart = new Chart(tempCtx, {
+                type: 'scatter',
+                data: {
+                    datasets: [
+                        {
+                            label: '最高温度',
+                            data: tempData.map((d, i) => ({x: i, y: d.high})),
+                            backgroundColor: '#e74c3c',
+                            borderColor: '#e74c3c',
+                            pointRadius: 4,
+                            pointHoverRadius: 6
+                        },
+                        {
+                            label: '最低温度',
+                            data: tempData.map((d, i) => ({x: i, y: d.low})),
+                            backgroundColor: '#c0392b',
+                            borderColor: '#c0392b',
+                            pointRadius: 4,
+                            pointHoverRadius: 6
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        x: {
+                            display: true,
+                            min: -0.5,
+                            max: tempData.length - 0.5,
+                            ticks: {
+                                stepSize: 1,
+                                callback: function(value) {
+                                    return tempData[value] ? tempData[value].date.slice(5) : '';
+                                },
+                                maxRotation: 45,
+                                minRotation: 45,
+                                maxTicksLimit: 10,
+                                font: {
+                                    size: 10
+                                }
+                            },
+                            grid: {
+                                offset: false
+                            }
+                        },
+                        y: {
+                            display: true,
+                            title: {
+                                display: true,
+                                text: '温度 (°C)',
+                                font: {
+                                    size: 11
+                                }
+                            },
+                            min: 0,
+                            max: 45,
+                            ticks: {
+                                font: {
+                                    size: 10
+                                }
+                            }
+                        }
+                    },
+                    animation: {
+                        onComplete: function() {
+                            const chart = this;
+                            const ctx = chart.ctx;
+                            ctx.save();
+                            ctx.strokeStyle = '#e74c3c';
+                            ctx.lineWidth = 2;
+                            chart.data.datasets[0].data.forEach(function(point, i) {
+                                const x = chart.scales.x.getPixelForValue(i);
+                                const yHigh = chart.scales.y.getPixelForValue(point.y);
+                                const yLow = chart.scales.y.getPixelForValue(chart.data.datasets[1].data[i].y);
+                                ctx.beginPath();
+                                ctx.moveTo(x, yHigh);
+                                ctx.lineTo(x, yLow);
+                                ctx.stroke();
+                            });
+                            ctx.restore();
+                        }
+                    }
+                }
+            });
+
+            humKChart = new Chart(humCtx, {
+                type: 'scatter',
+                data: {
+                    datasets: [
+                        {
+                            label: '最高湿度',
+                            data: humData.map((d, i) => ({x: i, y: d.high})),
+                            backgroundColor: '#3498db',
+                            borderColor: '#3498db',
+                            pointRadius: 4,
+                            pointHoverRadius: 6
+                        },
+                        {
+                            label: '最低湿度',
+                            data: humData.map((d, i) => ({x: i, y: d.low})),
+                            backgroundColor: '#2980b9',
+                            borderColor: '#2980b9',
+                            pointRadius: 4,
+                            pointHoverRadius: 6
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        x: {
+                            display: true,
+                            min: -0.5,
+                            max: humData.length - 0.5,
+                            ticks: {
+                                stepSize: 1,
+                                callback: function(value) {
+                                    return humData[value] ? humData[value].date.slice(5) : '';
+                                },
+                                maxRotation: 45,
+                                minRotation: 45,
+                                maxTicksLimit: 10,
+                                font: {
+                                    size: 10
+                                }
+                            },
+                            grid: {
+                                offset: false
+                            }
+                        },
+                        y: {
+                            display: true,
+                            title: {
+                                display: true,
+                                text: '湿度 (%)',
+                                font: {
+                                    size: 11
+                                }
+                            },
+                            min: 20,
+                            max: 90,
+                            ticks: {
+                                font: {
+                                    size: 10
+                                }
+                            }
+                        }
+                    },
+                    animation: {
+                        onComplete: function() {
+                            const chart = this;
+                            const ctx = chart.ctx;
+                            ctx.save();
+                            ctx.strokeStyle = '#3498db';
+                            ctx.lineWidth = 2;
+                            chart.data.datasets[0].data.forEach(function(point, i) {
+                                const x = chart.scales.x.getPixelForValue(i);
+                                const yHigh = chart.scales.y.getPixelForValue(point.y);
+                                const yLow = chart.scales.y.getPixelForValue(chart.data.datasets[1].data[i].y);
+                                ctx.beginPath();
+                                ctx.moveTo(x, yHigh);
+                                ctx.lineTo(x, yLow);
+                                ctx.stroke();
+                            });
+                            ctx.restore();
+                        }
+                    }
+                }
+            });
+        }
+
+        function showError(message) {
+            const errorDiv = document.getElementById('error');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+        }
+
+        function hideError() {
+            document.getElementById('error').style.display = 'none';
+        }
+
+        function init() {
+            updateTime();
+            setInterval(updateTime, 1000);
+
+            loadLatestData();
+            loadTodayTrend();
+            loadMonthKline();
+
+            setInterval(loadLatestData, 10000);
+            setInterval(loadTodayTrend, 30000);
+            setInterval(loadMonthKline, 60000);
+        }
+
+        init();
+    </script>
+</body>
+</html>

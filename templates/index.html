@@ -692,9 +692,9 @@
             loadTodayTrend();
             loadMonthKline();
 
-            setInterval(loadLatestData, 10000);
-            setInterval(loadTodayTrend, 30000);
-            setInterval(loadMonthKline, 60000);
+            setInterval(loadLatestData, 1000*60*10);
+            setInterval(loadTodayTrend, 1000*60*10);
+            setInterval(loadMonthKline, 1000*60*60*4);
         }
 
         init();

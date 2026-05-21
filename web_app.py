@@ -1,11 +1,11 @@
 from flask import Flask, render_template, request, jsonify
 import json
 import os
-from datetime import datetime, timedelta
+from datetime import datetime
 
 app = Flask(__name__)
 
-DATA_DIR = 'logs'
+DATA_DIR = 'log_display'
 
 @app.route('/')
 def index():
@@ -32,46 +32,6 @@ def upload_log():
                 f.write(json.dumps(record, ensure_ascii=False) + '\n')
 
         return jsonify({'success': True, 'file': log_file, 'count': len(records)})
-
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-@app.route('/api/data/<path:log_file>')
-def get_data(log_file):
-    try:
-        file_path = os.path.join(DATA_DIR, log_file)
-        if not os.path.exists(file_path):
-            return jsonify({'error': 'File not found'}), 404
-
-        records = []
-        with open(file_path, 'r', encoding='utf-8') as f:
-            for line in f:
-                line = line.strip()
-                if line:
-                    try:
-                        record = json.loads(line)
-                        records.append(record)
-                    except:
-                        pass
-
-        return jsonify(records)
-
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-@app.route('/api/files')
-def list_files():
-    try:
-        files = []
-        if os.path.exists(DATA_DIR):
-            for root, dirs, filenames in os.walk(DATA_DIR):
-                for filename in filenames:
-                    if filename.endswith('.log'):
-                        rel_path = os.path.relpath(os.path.join(root, filename), DATA_DIR)
-                        files.append(rel_path.replace('\\', '/'))
-
-        files.sort(reverse=True)
-        return jsonify(files)
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500

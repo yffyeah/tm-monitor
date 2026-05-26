@@ -72,19 +72,22 @@ def get_latest_data():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@app.route('/api/today_trend')
-def get_today_trend():
-    """获取今日温湿度趋势数据（每5分钟取一个点）"""
+@app.route('/api/trend')
+def get_trend():
+    """获取指定日期的温湿度趋势数据（每5分钟取一个点，最多60个点）"""
     try:
-        today = datetime.now().strftime('%Y-%m-%d')
+        date_str = request.args.get('date')
+        if not date_str:
+            date_str = datetime.now().strftime('%Y-%m-%d')
+
         all_records = []
 
         if os.path.exists(DATA_DIR):
-            today_dir = os.path.join(DATA_DIR, today)
-            if os.path.isdir(today_dir):
-                for filename in os.listdir(today_dir):
+            target_dir = os.path.join(DATA_DIR, date_str)
+            if os.path.isdir(target_dir):
+                for filename in os.listdir(target_dir):
                     if filename.endswith('.log'):
-                        file_path = os.path.join(today_dir, filename)
+                        file_path = os.path.join(target_dir, filename)
                         with open(file_path, 'r', encoding='utf-8') as f:
                             for line in f:
                                 line = line.strip()

@@ -571,6 +571,17 @@
                     plugins: {
                         legend: {
                             display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                title: function(context) {
+                                    const idx = context[0].dataIndex;
+                                    return tempData[idx] ? tempData[idx].date : '';
+                                },
+                                label: function(context) {
+                                    return context.dataset.label + ': ' + context.parsed.y.toFixed(1) + '°C';
+                                }
+                            }
                         }
                     },
                     scales: {
@@ -662,6 +673,17 @@
                     plugins: {
                         legend: {
                             display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                title: function(context) {
+                                    const idx = context[0].dataIndex;
+                                    return humData[idx] ? humData[idx].date : '';
+                                },
+                                label: function(context) {
+                                    return context.dataset.label + ': ' + context.parsed.y.toFixed(1) + '%';
+                                }
+                            }
                         }
                     },
                     scales: {

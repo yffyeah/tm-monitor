@@ -579,7 +579,9 @@
                                     return tempData[idx] ? tempData[idx].date : '';
                                 },
                                 label: function(context) {
-                                    return context.dataset.label + ': ' + context.parsed.y.toFixed(1) + '°C';
+                                    const idx = context.dataIndex;
+                                    const date = tempData[idx] ? tempData[idx].date.slice(8) + '日' : '';
+                                    return context.dataset.label + ': (' + date + ', ' + context.parsed.y.toFixed(1) + '°C)';
                                 }
                             }
                         }
@@ -681,7 +683,9 @@
                                     return humData[idx] ? humData[idx].date : '';
                                 },
                                 label: function(context) {
-                                    return context.dataset.label + ': ' + context.parsed.y.toFixed(1) + '%';
+                                    const idx = context.dataIndex;
+                                    const date = humData[idx] ? humData[idx].date.slice(8) + '日' : '';
+                                    return context.dataset.label + ': (' + date + ', ' + context.parsed.y.toFixed(1) + '%)';
                                 }
                             }
                         }
